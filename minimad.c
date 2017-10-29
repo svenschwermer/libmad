@@ -20,13 +20,20 @@
  */
 
 # include <stdio.h>
-# include <unistd.h>
-# include <sys/stat.h>
-# include <sys/mman.h>
+# include <efs.h>
+# include <ls.h>
+# include <string.h>
 
+# include <targets/lpc2148.h>
 # include "mad.h"
+# include "debug.h"
+# include "lpc_io.h"
+# include "midmad.h"
 
-/*
+static unsigned char  mp3_stream_buf[512*3];
+static EmbeddedFile  *mp3_file;
+
+/*			  
  * This is perhaps the simplest example use of the MAD high-level API.
  * Standard input is mapped into memory via mmap(), then the high-level API
  * is invoked with three callbacks: input, output, and error. The output
@@ -34,31 +41,16 @@
  * writes them to standard output in little-endian, stereo-interleaved
  * format.
  */
-
 static int decode(unsigned char const *, unsigned long);
 
-int main(int argc, char *argv[])
+void abort(void)
 {
-  struct stat stat;
-  void *fdm;
+}
 
-  if (argc != 1)
-    return 1;
-
-  if (fstat(STDIN_FILENO, &stat) == -1 ||
-      stat.st_size == 0)
-    return 2;
-
-  fdm = mmap(0, stat.st_size, PROT_READ, MAP_SHARED, STDIN_FILENO, 0);
-  if (fdm == MAP_FAILED)
-    return 3;
-
-  decode(fdm, stat.st_size);
-
-  if (munmap(fdm, stat.st_size) == -1)
-    return 4;
-
-  return 0;
+void mp3_play(EmbeddedFile *file)
+{ 
+    mp3_file = file;
+    decode((void *)mp3_stream_buf, sizeof(mp3_stream_buf)); 
 }
 
 /*
@@ -81,17 +73,36 @@ struct buffer {
  */
 
 static
-enum mad_flow input(void *data,
-		    struct mad_stream *stream)
+enum mad_flow input(void *data, struct mad_stream *stream)
 {
   struct buffer *buffer = data;
+  unsigned int lb , rb = 0;
 
   if (!buffer->length)
     return MAD_FLOW_STOP;
 
-  mad_stream_buffer(stream, buffer->start, buffer->length);
+  if (stream->this_frame && stream->next_frame)
+  {
+    rb = (unsigned int)(buffer->length) - 
+         (unsigned int)(stream->next_frame - stream->buffer);
 
-  buffer->length = 0;
+    memmove((void *)stream->buffer, (void *)stream->next_frame, rb);
+    lb = file_read(mp3_file, buffer->length - rb, (void *)(stream->buffer + rb));
+  }
+  else  
+    lb = file_read(mp3_file, buffer->length, (void *)buffer->start);
+
+  if (lb == 0)
+  {
+    wait_end_of_excerpt();
+    buffer->length = 0;
+    return MAD_FLOW_STOP;
+  }
+  else 
+    buffer->length = lb + rb;
+
+  mad_stream_buffer(stream, buffer->start, buffer->length);
+  //  buffer->length = 0;
 
   return MAD_FLOW_CONTINUE;
 }
@@ -132,30 +143,16 @@ enum mad_flow output(void *data,
 		     struct mad_pcm *pcm)
 {
   unsigned int nchannels, nsamples;
-  mad_fixed_t const *left_ch, *right_ch;
+  unsigned int samplerate;
+  //  unsigned int i;
 
   /* pcm->samplerate contains the sampling frequency */
 
   nchannels = pcm->channels;
   nsamples  = pcm->length;
-  left_ch   = pcm->samples[0];
-  right_ch  = pcm->samples[1];
+  samplerate = pcm->samplerate;
 
-  while (nsamples--) {
-    signed int sample;
-
-    /* output sample(s) in 16-bit signed little-endian PCM */
-
-    sample = scale(*left_ch++);
-    putchar((sample >> 0) & 0xff);
-    putchar((sample >> 8) & 0xff);
-
-    if (nchannels == 2) {
-      sample = scale(*right_ch++);
-      putchar((sample >> 0) & 0xff);
-      putchar((sample >> 8) & 0xff);
-    }
-  }
+  TOGGLE_LIVE_LED0();
 
   return MAD_FLOW_CONTINUE;
 }
@@ -172,11 +169,11 @@ enum mad_flow error(void *data,
 		    struct mad_stream *stream,
 		    struct mad_frame *frame)
 {
-  struct buffer *buffer = data;
+  // struct buffer *buffer = data;
 
-  fprintf(stderr, "decoding error 0x%04x (%s) at byte offset %u\n",
-	  stream->error, mad_stream_errorstr(stream),
-	  stream->this_frame - buffer->start);
+  // printf("decoding error 0x%04x (%s) at byte offset %u\n",
+  //	  stream->error, mad_stream_errorstr(stream),
+  // 	  stream->this_frame - buffer->start);
 
   /* return MAD_FLOW_BREAK here to stop decoding (and propagate an error) */
 
@@ -206,9 +203,14 @@ int decode(unsigned char const *start, unsigned long length)
 
   /* configure input, output, and error functions */
 
-  mad_decoder_init(&decoder, &buffer,
-		   input, 0 /* header */, 0 /* filter */, output,
-		   error, 0 /* message */);
+  mad_decoder_init(&decoder, 
+                  &buffer,
+		   input, 
+                   0 /* header */, 
+                   0 /* filter */,
+                   output,
+		   error, 
+                   0 /* message */);
 
   /* start decoding */
 

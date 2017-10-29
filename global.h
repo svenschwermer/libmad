@@ -22,6 +22,9 @@
 # ifndef LIBMAD_GLOBAL_H
 # define LIBMAD_GLOBAL_H
 
+extern void abort(void);
+
+
 /* conditional debugging */
 
 # if defined(DEBUG) && defined(NDEBUG)

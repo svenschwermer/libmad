@@ -2,9 +2,33 @@
  libmad - MPEG audio decoder library
  Copyright (C) 2000-2004 Underbit Technologies, Inc.
 
- $Id: CHANGES,v 1.14 2004/02/17 02:02:03 rob Exp $
+ $Id: CHANGES,v 1.14 2006/12/16 02:02:03 rob Exp $
 
 ===============================================================================
+
+Version 0.15.1 (NXP)
+
+ *  The module synth.c the functions synth_full and synth_half have been 
+    modified to reduce the RAM memory requirement cutting the output pcm.samples 
+    buffer. The buffer is replaced with the direct access to the audio render FIFO 
+    declared in the module io_lpc.c. This FIFO is defined to manage only a 
+    mono-audio signal. Because the pcm.samples[ch] buffer store 9216 bytes for a 
+    stereo channel, this change saves 7168 bytes for the application in the case of 
+    a mono audio signal is managed. To reach this target the order in which the 
+    two for cycles are calculated in these functions has been swapped. 
+ *  Because the synth.c module access directly to the audio render, 
+    the function output in the module midmad became unnecessary, 
+    but is still there because the presence of the output LED toggle command
+    TOGGLE_LIVE_LED0().
+ *  In the module synth.c the function mad_synth_frame has been changed 
+    to insert the call to the  set_dac_sample_rate(synth->pcm.samplerate). 
+    When a new output sample frequency has been detected by the MP3 decoder, 
+    suddenly this information is sent to the audio render.
+ *  The malloc()/free() functions in the modules decoder.c stream.c and layer3.c 
+    have been cancelled and replaced with a reference to a static structures always 
+    allocated in RAM memory.
+ *  In the module midmad.c an additional mp3_play() function has been created to 
+    hide all details (software encapsulation) of the libmad  implementation for a libmad user.
 
 Version 0.15.1 (beta)
 

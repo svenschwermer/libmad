@@ -96,106 +96,106 @@
      120     ct02 low
 */
 
-#define BLOCK_MODE_NORMAL   0
-#define BLOCK_MODE_START    1
-#define BLOCK_MODE_STOP     3
+.equ    BLOCK_MODE_NORMAL,   0
+.equ    BLOCK_MODE_START,    1
+.equ    BLOCK_MODE_STOP,     3
+ 
+ 
+.equ    X0 , 0x00
+.equ    X1 , 0x04
+.equ    X2 , 0x08
+.equ    X3 , 0x0C
+.equ    X4 , 0x10
+.equ    X5 , 0x14
+.equ    X6 , 0x18
+.equ    X7 , 0x1c
+.equ    X8 , 0x20
+.equ    X9 , 0x24
+.equ    X10, 0x28
+.equ    X11, 0x2c
+.equ    X12, 0x30
+.equ    X13, 0x34
+.equ    X14, 0x38
+.equ    X15, 0x3c
+.equ    X16, 0x40
+.equ    X17, 0x44
+	   
+.equ    x0 , 0x00
+.equ    x1 , 0x04
+.equ    x2 , 0x08
+.equ    x3 , 0x0C
+.equ    x4 , 0x10
+.equ    x5 , 0x14
+.equ    x6 , 0x18
+.equ    x7 , 0x1c
+.equ    x8 , 0x20
+.equ    x9 , 0x24
+.equ    x10, 0x28
+.equ    x11, 0x2c
+.equ    x12, 0x30
+.equ    x13, 0x34
+.equ    x14, 0x38
+.equ    x15, 0x3c
+.equ    x16, 0x40
+.equ    x17, 0x44
+.equ    x18, 0x48
+.equ    x19, 0x4c
+.equ    x20, 0x50
+.equ    x21, 0x54
+.equ    x22, 0x58
+.equ    x23, 0x5c
+.equ    x24, 0x60
+.equ    x25, 0x64
+.equ    x26, 0x68
+.equ    x27, 0x6c
+.equ    x28, 0x70
+.equ    x29, 0x74
+.equ    x30, 0x78
+.equ    x31, 0x7c
+.equ    x32, 0x80
+.equ    x33, 0x84
+.equ    x34, 0x88
+.equ    x35, 0x8c
 
+.equ    K00, 0x0ffc19fd
+.equ    K01, 0x00b2aa3e
+.equ    K02, 0x0fdcf549
+.equ    K03, 0x0216a2a2
+.equ    K04, 0x0f9ee890
+.equ    K05, 0x03768962
+.equ    K06, 0x0f426cb5
+.equ    K07, 0x04cfb0e2
+.equ    K08, 0x0ec835e8
+.equ    K09, 0x061f78aa
+.equ    K10, 0x0e313245
+.equ    K11, 0x07635284
+.equ    K12, 0x0d7e8807
+.equ    K13, 0x0898c779
+.equ    K14, 0x0cb19346
+.equ    K15, 0x09bd7ca0
+.equ    K16, 0x0bcbe352
+.equ    K17, 0x0acf37ad
 
-#define X0   0x00
-#define X1   0x04
-#define X2   0x08
-#define X3   0x0C
-#define X4   0x10
-#define X5   0x14
-#define X6   0x18
-#define X7   0x1c
-#define X8   0x20
-#define X9   0x24
-#define X10  0x28
-#define X11  0x2c
-#define X12  0x30
-#define X13  0x34
-#define X14  0x38
-#define X15  0x3c
-#define X16  0x40
-#define X17  0x44
+.equ    minus_K02, 0xf0230ab7
 
-#define x0   0x00
-#define x1   0x04
-#define x2   0x08
-#define x3   0x0C
-#define x4   0x10
-#define x5   0x14
-#define x6   0x18
-#define x7   0x1c
-#define x8   0x20
-#define x9   0x24
-#define x10  0x28
-#define x11  0x2c
-#define x12  0x30
-#define x13  0x34
-#define x14  0x38
-#define x15  0x3c
-#define x16  0x40
-#define x17  0x44
-#define x18  0x48
-#define x19  0x4c
-#define x20  0x50
-#define x21  0x54
-#define x22  0x58
-#define x23  0x5c
-#define x24  0x60
-#define x25  0x64
-#define x26  0x68
-#define x27  0x6c
-#define x28  0x70
-#define x29  0x74
-#define x30  0x78
-#define x31  0x7c
-#define x32  0x80
-#define x33  0x84
-#define x34  0x88
-#define x35  0x8c
-
-#define K00  0x0ffc19fd
-#define K01  0x00b2aa3e
-#define K02  0x0fdcf549
-#define K03  0x0216a2a2
-#define K04  0x0f9ee890
-#define K05  0x03768962
-#define K06  0x0f426cb5
-#define K07  0x04cfb0e2
-#define K08  0x0ec835e8
-#define K09  0x061f78aa
-#define K10  0x0e313245
-#define K11  0x07635284
-#define K12  0x0d7e8807
-#define K13  0x0898c779
-#define K14  0x0cb19346
-#define K15  0x09bd7ca0
-#define K16  0x0bcbe352
-#define K17  0x0acf37ad
-
-#define minus_K02 0xf0230ab7
-
-#define WL0  0x00b2aa3e
-#define WL1  0x0216a2a2
-#define WL2  0x03768962
-#define WL3  0x04cfb0e2
-#define WL4  0x061f78aa
-#define WL5  0x07635284
-#define WL6  0x0898c779
-#define WL7  0x09bd7ca0
-#define WL8  0x0acf37ad
-#define WL9  0x0bcbe352
-#define WL10 0x0cb19346
-#define WL11 0x0d7e8807
-#define WL12 0x0e313245
-#define WL13 0x0ec835e8
-#define WL14 0x0f426cb5
-#define WL15 0x0f9ee890
-#define WL16 0x0fdcf549
-#define WL17 0x0ffc19fd
+.equ    WL0 ,0x00b2aa3e
+.equ    WL1 ,0x0216a2a2
+.equ    WL2 ,0x03768962
+.equ    WL3 ,0x04cfb0e2
+.equ    WL4 ,0x061f78aa
+.equ    WL5 ,0x07635284
+.equ    WL6 ,0x0898c779
+.equ    WL7 ,0x09bd7ca0
+.equ    WL8 ,0x0acf37ad
+.equ    WL9 ,0x0bcbe352
+.equ    WL10,0x0cb19346
+.equ    WL11,0x0d7e8807
+.equ    WL12,0x0e313245
+.equ    WL13,0x0ec835e8
+.equ    WL14,0x0f426cb5
+.equ    WL15,0x0f9ee890
+.equ    WL16,0x0fdcf549
+.equ    WL17,0x0ffc19fd
 
 
 @*****************************************************************************
