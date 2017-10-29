@@ -80,10 +80,10 @@ struct mad_decoder {
   } async;
 
 /*
-   struct {
-     struct mad_stream stream;
-     struct mad_frame frame;
-     struct mad_synth synth;
+  struct {
+    struct mad_stream stream;
+    struct mad_frame frame;
+    struct mad_synth synth;
   } *sync;
 
 */

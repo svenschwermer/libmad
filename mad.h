@@ -25,14 +25,11 @@ extern "C" {
 # endif
 
 
-# define FPM_INTEL
-
-
-
 # define SIZEOF_INT 4
 # define SIZEOF_LONG 4
 # define SIZEOF_LONG_LONG 8
 
+#include "config.h"
 
 /* Id: version.h,v 1.26 2004/01/23 09:41:33 rob Exp */
 
@@ -53,8 +50,8 @@ extern "C" {
 				MAD_VERSION_EXTRA
 
 # define MAD_PUBLISHYEAR	"2000-2004"
-# define MAD_AUTHOR		    "Underbit Technologies, Inc."
-# define MAD_EMAIL		    "info@underbit.com"
+# define MAD_AUTHOR		"Underbit Technologies, Inc."
+# define MAD_EMAIL		"info@underbit.com"
 
 extern char const mad_version[];
 extern char const mad_copyright[];

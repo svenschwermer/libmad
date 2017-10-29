@@ -19,6 +19,7 @@
  * $Id: layer3.c,v 1.43 2004/01/23 09:41:32 rob Exp $
  */
 
+
 # ifdef HAVE_CONFIG_H
 #  include "config.h"
 # endif
@@ -44,9 +45,7 @@
 # include "frame.h"
 # include "huffman.h"
 # include "layer3.h"
-# include "debug.h"
-
-unsigned char frame_overlap_buff[2 * 32 * 18 * sizeof(mad_fixed_t)];
+#include "align.h"
 
 
 /* --- Layer III ----------------------------------------------------------- */
@@ -98,7 +97,7 @@ static
 struct {
   unsigned char slen1;
   unsigned char slen2;
-} const sflen_table[16] = {
+} const ICACHE_RODATA_ATTR sflen_table[16] = {
   { 0, 0 }, { 0, 1 }, { 0, 2 }, { 0, 3 },
   { 3, 0 }, { 1, 1 }, { 1, 2 }, { 1, 3 },
   { 2, 1 }, { 2, 2 }, { 2, 3 }, { 3, 1 },
@@ -141,46 +140,46 @@ unsigned char const nsfb_table[6][3][4] = {
  * derived from Table B.8 of ISO/IEC 11172-3
  */
 static
-unsigned char const sfb_48000_long[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_48000_long[] = {
    4,  4,  4,  4,  4,  4,  6,  6,  6,   8,  10,
   12, 16, 18, 22, 28, 34, 40, 46, 54,  54, 192
 };
 
 static
-unsigned char const sfb_44100_long[] = {
+unsigned ICACHE_RODATA_ATTR  char const sfb_44100_long[] = {
    4,  4,  4,  4,  4,  4,  6,  6,  8,   8,  10,
   12, 16, 20, 24, 28, 34, 42, 50, 54,  76, 158
 };
 
 static
-unsigned char const sfb_32000_long[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_32000_long[] = {
    4,  4,  4,  4,  4,  4,  6,  6,  8,  10,  12,
   16, 20, 24, 30, 38, 46, 56, 68, 84, 102,  26
 };
 
 static
-unsigned char const sfb_48000_short[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_48000_short[] = {
    4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  6,
    6,  6,  6,  6,  6, 10, 10, 10, 12, 12, 12, 14, 14,
   14, 16, 16, 16, 20, 20, 20, 26, 26, 26, 66, 66, 66
 };
 
 static
-unsigned char const sfb_44100_short[] = {
+unsigned ICACHE_RODATA_ATTR char const sfb_44100_short[] = {
    4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  6,
    6,  6,  8,  8,  8, 10, 10, 10, 12, 12, 12, 14, 14,
   14, 18, 18, 18, 22, 22, 22, 30, 30, 30, 56, 56, 56
 };
 
 static
-unsigned char const sfb_32000_short[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_32000_short[] = {
    4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  6,
    6,  6,  8,  8,  8, 12, 12, 12, 16, 16, 16, 20, 20,
   20, 26, 26, 26, 34, 34, 34, 42, 42, 42, 12, 12, 12
 };
 
 static
-unsigned char const sfb_48000_mixed[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_48000_mixed[] = {
   /* long */   4,  4,  4,  4,  4,  4,  6,  6,
   /* short */  4,  4,  4,  6,  6,  6,  6,  6,  6, 10,
               10, 10, 12, 12, 12, 14, 14, 14, 16, 16,
@@ -188,7 +187,7 @@ unsigned char const sfb_48000_mixed[] = {
 };
 
 static
-unsigned char const sfb_44100_mixed[] = {
+unsigned ICACHE_RODATA_ATTR  char const sfb_44100_mixed[] = {
   /* long */   4,  4,  4,  4,  4,  4,  6,  6,
   /* short */  4,  4,  4,  6,  6,  6,  8,  8,  8, 10,
               10, 10, 12, 12, 12, 14, 14, 14, 18, 18,
@@ -196,7 +195,7 @@ unsigned char const sfb_44100_mixed[] = {
 };
 
 static
-unsigned char const sfb_32000_mixed[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_32000_mixed[] = {
   /* long */   4,  4,  4,  4,  4,  4,  6,  6,
   /* short */  4,  4,  4,  6,  6,  6,  8,  8,  8, 12,
               12, 12, 16, 16, 16, 20, 20, 20, 26, 26,
@@ -208,13 +207,13 @@ unsigned char const sfb_32000_mixed[] = {
  * derived from Table B.2 of ISO/IEC 13818-3
  */
 static
-unsigned char const sfb_24000_long[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_24000_long[] = {
    6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
   18, 22, 26, 32, 38, 46, 54, 62, 70,  76,  36
 };
 
 static
-unsigned char const sfb_22050_long[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_22050_long[] = {
    6,  6,  6,  6,  6,  6,  8, 10, 12,  14,  16,
   20, 24, 28, 32, 38, 46, 52, 60, 68,  58,  54
 };
@@ -222,28 +221,28 @@ unsigned char const sfb_22050_long[] = {
 # define sfb_16000_long  sfb_22050_long
 
 static
-unsigned char const sfb_24000_short[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_24000_short[] = {
    4,  4,  4,  4,  4,  4,  4,  4,  4,  6,  6,  6,  8,
    8,  8, 10, 10, 10, 12, 12, 12, 14, 14, 14, 18, 18,
   18, 24, 24, 24, 32, 32, 32, 44, 44, 44, 12, 12, 12
 };
 
 static
-unsigned char const sfb_22050_short[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_22050_short[] = {
    4,  4,  4,  4,  4,  4,  4,  4,  4,  6,  6,  6,  6,
    6,  6,  8,  8,  8, 10, 10, 10, 14, 14, 14, 18, 18,
   18, 26, 26, 26, 32, 32, 32, 42, 42, 42, 18, 18, 18
 };
 
 static
-unsigned char const sfb_16000_short[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_16000_short[] = {
    4,  4,  4,  4,  4,  4,  4,  4,  4,  6,  6,  6,  8,
    8,  8, 10, 10, 10, 12, 12, 12, 14, 14, 14, 18, 18,
   18, 24, 24, 24, 30, 30, 30, 40, 40, 40, 18, 18, 18
 };
 
 static
-unsigned char const sfb_24000_mixed[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_24000_mixed[] = {
   /* long */   6,  6,  6,  6,  6,  6,
   /* short */  6,  6,  6,  8,  8,  8, 10, 10, 10, 12,
               12, 12, 14, 14, 14, 18, 18, 18, 24, 24,
@@ -251,7 +250,7 @@ unsigned char const sfb_24000_mixed[] = {
 };
 
 static
-unsigned char const sfb_22050_mixed[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_22050_mixed[] = {
   /* long */   6,  6,  6,  6,  6,  6,
   /* short */  6,  6,  6,  6,  6,  6,  8,  8,  8, 10,
               10, 10, 14, 14, 14, 18, 18, 18, 26, 26,
@@ -259,7 +258,7 @@ unsigned char const sfb_22050_mixed[] = {
 };
 
 static
-unsigned char const sfb_16000_mixed[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_16000_mixed[] = {
   /* long */   6,  6,  6,  6,  6,  6,
   /* short */  6,  6,  6,  8,  8,  8, 10, 10, 10, 12,
               12, 12, 14, 14, 14, 18, 18, 18, 24, 24,
@@ -274,7 +273,7 @@ unsigned char const sfb_16000_mixed[] = {
 # define sfb_11025_long  sfb_12000_long
 
 static
-unsigned char const sfb_8000_long[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_8000_long[] = {
   12, 12, 12, 12, 12, 12, 16, 20, 24,  28,  32,
   40, 48, 56, 64, 76, 90,  2,  2,  2,   2,   2
 };
@@ -283,7 +282,7 @@ unsigned char const sfb_8000_long[] = {
 # define sfb_11025_short  sfb_12000_short
 
 static
-unsigned char const sfb_8000_short[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_8000_short[] = {
    8,  8,  8,  8,  8,  8,  8,  8,  8, 12, 12, 12, 16,
   16, 16, 20, 20, 20, 24, 24, 24, 28, 28, 28, 36, 36,
   36,  2,  2,  2,  2,  2,  2,  2,  2,  2, 26, 26, 26
@@ -295,7 +294,7 @@ unsigned char const sfb_8000_short[] = {
 /* the 8000 Hz short block scalefactor bands do not break after
    the first 36 frequency lines, so this is probably wrong */
 static
-unsigned char const sfb_8000_mixed[] = {
+unsigned char const ICACHE_RODATA_ATTR sfb_8000_mixed[] = {
   /* long */  12, 12, 12,
   /* short */  4,  4,  4,  8,  8,  8, 12, 12, 12, 16, 16, 16,
               20, 20, 20, 24, 24, 24, 28, 28, 28, 36, 36, 36,
@@ -307,7 +306,7 @@ struct {
   unsigned char const *l;
   unsigned char const *s;
   unsigned char const *m;
-} const sfbwidth_table[9] = {
+} const ICACHE_RODATA_ATTR sfbwidth_table[9] = {
   { sfb_48000_long, sfb_48000_short, sfb_48000_mixed },
   { sfb_44100_long, sfb_44100_short, sfb_44100_mixed },
   { sfb_32000_long, sfb_32000_short, sfb_32000_mixed },
@@ -337,7 +336,7 @@ static
 struct fixedfloat {
   unsigned long mantissa  : 27;
   unsigned short exponent :  5;
-} const rq_table[8207] = {
+} const ICACHE_RODATA_ATTR rq_table[8207] = {
 # include "rq_table.dat"
 };
 
@@ -433,7 +432,7 @@ mad_fixed_t const window_l[36] = {
  * window_s[i] = sin((PI / 12) * (i + 1/2))
  */
 static
-mad_fixed_t const window_s[12] = {
+mad_fixed_t const  window_s[12] = {
   MAD_F(0x0216a2a2) /* 0.130526192 */, MAD_F(0x061f78aa) /* 0.382683432 */,
   MAD_F(0x09bd7ca0) /* 0.608761429 */, MAD_F(0x0cb19346) /* 0.793353340 */,
   MAD_F(0x0ec835e8) /* 0.923879533 */, MAD_F(0x0fdcf549) /* 0.991444861 */,
@@ -450,7 +449,7 @@ mad_fixed_t const window_s[12] = {
  * is_table[i] = is_ratio[i] / (1 + is_ratio[i])
  */
 static
-mad_fixed_t const is_table[7] = {
+mad_fixed_t const  is_table[7] = {
   MAD_F(0x00000000) /* 0.000000000 */,
   MAD_F(0x0361962f) /* 0.211324865 */,
   MAD_F(0x05db3d74) /* 0.366025404 */,
@@ -509,7 +508,7 @@ mad_fixed_t const is_lsf_table[2][15] = {
  * DESCRIPTION:	decode frame side information from a bitstream
  */
 static
-enum mad_error III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
+enum mad_error ICACHE_FLASH_ATTR III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
 			    int lsf, struct sideinfo *si,
 			    unsigned int *data_bitlen,
 			    unsigned int *priv_bitlen)
@@ -600,7 +599,7 @@ enum mad_error III_sideinfo(struct mad_bitptr *ptr, unsigned int nch,
  * DESCRIPTION:	decode channel scalefactors for LSF from a bitstream
  */
 static
-unsigned int III_scalefactors_lsf(struct mad_bitptr *ptr,
+unsigned int ICACHE_FLASH_ATTR III_scalefactors_lsf(struct mad_bitptr *ptr,
 				  struct channel *channel,
 				  struct channel *gr1ch, int mode_extension)
 {
@@ -651,7 +650,7 @@ unsigned int III_scalefactors_lsf(struct mad_bitptr *ptr,
       for (i = 0; i < nsfb[part]; ++i)
 	channel->scalefac[n++] = mad_bit_read(ptr, slen[part]);
     }
-				  
+
     while (n < 39)
       channel->scalefac[n++] = 0;
   }
@@ -715,7 +714,7 @@ unsigned int III_scalefactors_lsf(struct mad_bitptr *ptr,
  * DESCRIPTION:	decode channel scalefactors of one granule from a bitstream
  */
 static
-unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
+unsigned int ICACHE_FLASH_ATTR III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
 			      struct channel const *gr0ch, unsigned int scfsi)
 {
   struct mad_bitptr start;
@@ -723,8 +722,8 @@ unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
 
   start = *ptr;
 
-  slen1 = sflen_table[channel->scalefac_compress].slen1;
-  slen2 = sflen_table[channel->scalefac_compress].slen2;
+  slen1 = unalChar(&sflen_table[channel->scalefac_compress].slen1);
+  slen2 = unalChar(&sflen_table[channel->scalefac_compress].slen2);
 
   if (channel->block_type == 2) {
     unsigned int nsfb;
@@ -813,7 +812,7 @@ unsigned int III_scalefactors(struct mad_bitptr *ptr, struct channel *channel,
  * DESCRIPTION:	calculate scalefactor exponents
  */
 static
-void III_exponents(struct channel const *channel,
+void ICACHE_FLASH_ATTR III_exponents(struct channel const *channel,
 		   unsigned char const *sfbwidth, signed int exponents[39])
 {
   signed int gain;
@@ -840,7 +839,7 @@ void III_exponents(struct channel const *channel,
 	  (signed int) ((channel->scalefac[sfbi] + (pretab[sfbi] & premask)) <<
 			scalefac_multiplier);
 
-	l += sfbwidth[sfbi++];
+	l += unalChar(&sfbwidth[sfbi++]);
       }
     }
 
@@ -858,7 +857,7 @@ void III_exponents(struct channel const *channel,
       exponents[sfbi + 2] = gain2 -
 	(signed int) (channel->scalefac[sfbi + 2] << scalefac_multiplier);
 
-      l    += 3 * sfbwidth[sfbi];
+      l    += 3 * unalChar(&sfbwidth[sfbi]);
       sfbi += 3;
     }
   }
@@ -884,7 +883,7 @@ void III_exponents(struct channel const *channel,
  * DESCRIPTION:	requantize one (positive) value
  */
 static
-mad_fixed_t III_requantize(unsigned int value, signed int exp)
+mad_fixed_t ICACHE_FLASH_ATTR III_requantize(unsigned int value, signed int exp)
 {
   mad_fixed_t requantized;
   signed int frac;
@@ -911,8 +910,8 @@ mad_fixed_t III_requantize(unsigned int value, signed int exp)
     if (exp >= 5) {
       /* overflow */
 # if defined(DEBUG)
-       DBG((TXT("requantize overflow (%f * 2^%d)\n"),
-	      mad_f_todouble(requantized), exp));
+      fprintf(stderr, "requantize overflow (%f * 2^%d)\n",
+	      mad_f_todouble(requantized), exp);
 # endif
       requantized = MAD_F_MAX;
     }
@@ -934,7 +933,7 @@ mad_fixed_t III_requantize(unsigned int value, signed int exp)
  * DESCRIPTION:	decode Huffman code words of one channel of one granule
  */
 static
-enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
+enum mad_error ICACHE_FLASH_ATTR III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
 			      struct channel *channel,
 			      unsigned char const *sfbwidth,
 			      unsigned int part2_length)
@@ -973,7 +972,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
     unsigned int linbits, startbits, big_values, reqhits;
     mad_fixed_t reqcache[16];
 
-    sfbound = xrptr + *sfbwidth++;
+    sfbound = xrptr + unalChar(sfbwidth++);
     rcount  = channel->region0_count + 1;
 
     entry     = &mad_huff_pair_table[channel->table_select[region = 0]];
@@ -996,7 +995,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
       register mad_fixed_t requantized;
 
       if (xrptr == sfbound) {
-	sfbound += *sfbwidth++;
+	sfbound += unalChar(sfbwidth++);
 
 	/* change table if region boundary */
 
@@ -1195,7 +1194,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
       cachesz -= quad->value.hlen;
 
       if (xrptr == sfbound) {
-	sfbound += *sfbwidth++;
+	sfbound += unalChar(sfbwidth++);
 
 	if (exp != *expptr) {
 	  exp = *expptr;
@@ -1218,7 +1217,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
       xrptr += 2;
 
       if (xrptr == sfbound) {
-	sfbound += *sfbwidth++;
+	sfbound += unalChar(sfbwidth++);
 
 	if (exp != *expptr) {
 	  exp = *expptr;
@@ -1282,7 +1281,7 @@ enum mad_error III_huffdecode(struct mad_bitptr *ptr, mad_fixed_t xr[576],
  * DESCRIPTION:	reorder frequency lines of a short block into subband order
  */
 static
-void III_reorder(mad_fixed_t xr[576], struct channel const *channel,
+void ICACHE_FLASH_ATTR III_reorder(mad_fixed_t xr[576], struct channel const *channel,
 		 unsigned char const sfbwidth[39])
 {
   mad_fixed_t tmp[32][3][6];
@@ -1296,7 +1295,7 @@ void III_reorder(mad_fixed_t xr[576], struct channel const *channel,
 
     l = 0;
     while (l < 36)
-      l += *sfbwidth++;
+      l += unalChar(sfbwidth++);
   }
 
   for (w = 0; w < 3; ++w) {
@@ -1304,12 +1303,12 @@ void III_reorder(mad_fixed_t xr[576], struct channel const *channel,
     sw[w]  = 0;
   }
 
-  f = *sfbwidth++;
+  f = unalChar(sfbwidth++);
   w = 0;
 
   for (l = 18 * sb; l < 576; ++l) {
     if (f-- == 0) {
-      f = *sfbwidth++ - 1;
+      f = unalChar(sfbwidth++) - 1;
       w = (w + 1) % 3;
     }
 
@@ -1329,7 +1328,7 @@ void III_reorder(mad_fixed_t xr[576], struct channel const *channel,
  * DESCRIPTION:	perform joint stereo processing on a granule
  */
 static
-enum mad_error III_stereo(mad_fixed_t xr[2][576],
+enum mad_error ICACHE_FLASH_ATTR III_stereo(mad_fixed_t xr[2][576],
 			  struct granule const *granule,
 			  struct mad_header *header,
 			  unsigned char const *sfbwidth)
@@ -1366,7 +1365,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
 
       if (right_ch->flags & mixed_block_flag) {
 	while (l < 36) {
-	  n = sfbwidth[sfbi++];
+	  n = unalChar(&sfbwidth[sfbi++]);
 
 	  for (i = 0; i < n; ++i) {
 	    if (right_xr[i]) {
@@ -1384,7 +1383,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
 
       w = 0;
       while (l < 576) {
-	n = sfbwidth[sfbi++];
+	n = unalChar(&sfbwidth[sfbi++]);
 
 	for (i = 0; i < n; ++i) {
 	  if (right_xr[i]) {
@@ -1421,7 +1420,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
 
       bound = 0;
       for (sfbi = l = 0; l < 576; l += n) {
-	n = sfbwidth[sfbi++];
+	n = unalChar(&sfbwidth[sfbi++]);
 
 	for (i = 0; i < n; ++i) {
 	  if (right_xr[i]) {
@@ -1447,7 +1446,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
       lsf_scale = is_lsf_table[right_ch->scalefac_compress & 0x1];
 
       for (sfbi = l = 0; l < 576; ++sfbi, l += n) {
-	n = sfbwidth[sfbi];
+	n = unalChar(&sfbwidth[sfbi]);
 
 	if (!(modes[sfbi] & I_STEREO))
 	  continue;
@@ -1483,7 +1482,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
     }
     else {  /* !(header->flags & MAD_FLAG_LSF_EXT) */
       for (sfbi = l = 0; l < 576; ++sfbi, l += n) {
-	n = sfbwidth[sfbi];
+	n = unalChar(&sfbwidth[sfbi]);
 
 	if (!(modes[sfbi] & I_STEREO))
 	  continue;
@@ -1517,7 +1516,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
     invsqrt2 = root_table[3 + -2];
 
     for (sfbi = l = 0; l < 576; ++sfbi, l += n) {
-      n = sfbwidth[sfbi];
+      n = unalChar(&sfbwidth[sfbi]);
 
       if (modes[sfbi] != MS_STEREO)
 	continue;
@@ -1542,7 +1541,7 @@ enum mad_error III_stereo(mad_fixed_t xr[2][576],
  * DESCRIPTION:	perform frequency line alias reduction
  */
 static
-void III_aliasreduce(mad_fixed_t xr[576], int lines)
+void ICACHE_FLASH_ATTR III_aliasreduce(mad_fixed_t xr[576], int lines)
 {
   mad_fixed_t const *bound;
   int i;
@@ -1581,7 +1580,7 @@ void III_imdct_l(mad_fixed_t const [18], mad_fixed_t [36], unsigned int);
 # else
 #  if 1
 static
-void fastsdct(mad_fixed_t const x[9], mad_fixed_t y[18])
+void ICACHE_FLASH_ATTR fastsdct(mad_fixed_t const x[9], mad_fixed_t y[18])
 {
   mad_fixed_t a0,  a1,  a2,  a3,  a4,  a5,  a6,  a7,  a8,  a9,  a10, a11, a12;
   mad_fixed_t a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25;
@@ -1649,7 +1648,7 @@ void fastsdct(mad_fixed_t const x[9], mad_fixed_t y[18])
 }
 
 static inline
-void sdctII(mad_fixed_t const x[18], mad_fixed_t X[18])
+void ICACHE_FLASH_ATTR sdctII(mad_fixed_t const x[18], mad_fixed_t X[18])
 {
   mad_fixed_t tmp[9];
   int i;
@@ -1694,7 +1693,7 @@ void sdctII(mad_fixed_t const x[18], mad_fixed_t X[18])
 }
 
 static inline
-void dctIV(mad_fixed_t const y[18], mad_fixed_t X[18])
+void ICACHE_FLASH_ATTR dctIV(mad_fixed_t const y[18], mad_fixed_t X[18])
 {
   mad_fixed_t tmp[18];
   int i;
@@ -1738,7 +1737,7 @@ void dctIV(mad_fixed_t const y[18], mad_fixed_t X[18])
  * DESCRIPTION:	perform X[18]->x[36] IMDCT using Szu-Wei Lee's fast algorithm
  */
 static inline
-void imdct36(mad_fixed_t const x[18], mad_fixed_t y[36])
+void ICACHE_FLASH_ATTR imdct36(mad_fixed_t const x[18], mad_fixed_t y[36])
 {
   mad_fixed_t tmp[18];
   int i;
@@ -2063,7 +2062,7 @@ void imdct36(mad_fixed_t const X[18], mad_fixed_t x[36])
  * DESCRIPTION:	perform IMDCT and windowing for long blocks
  */
 static
-void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
+void ICACHE_FLASH_ATTR III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
 		 unsigned int block_type)
 {
   unsigned int i;
@@ -2150,7 +2149,7 @@ void III_imdct_l(mad_fixed_t const X[18], mad_fixed_t z[36],
  * DESCRIPTION:	perform IMDCT and windowing for short blocks
  */
 static
-void III_imdct_s(mad_fixed_t const X[18], mad_fixed_t z[36])
+void ICACHE_FLASH_ATTR III_imdct_s(mad_fixed_t const X[18], mad_fixed_t z[36])
 {
   mad_fixed_t y[36], *yptr;
   mad_fixed_t const *wptr;
@@ -2229,7 +2228,7 @@ void III_imdct_s(mad_fixed_t const X[18], mad_fixed_t z[36])
  * DESCRIPTION:	perform overlap-add of windowed IMDCT outputs
  */
 static
-void III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
+void ICACHE_FLASH_ATTR III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
 		 mad_fixed_t sample[18][32], unsigned int sb)
 {
   unsigned int i;
@@ -2277,7 +2276,7 @@ void III_overlap(mad_fixed_t const output[36], mad_fixed_t overlap[18],
  * DESCRIPTION:	perform "overlap-add" of zero IMDCT outputs
  */
 static inline
-void III_overlap_z(mad_fixed_t overlap[18],
+void ICACHE_FLASH_ATTR III_overlap_z(mad_fixed_t overlap[18],
 		   mad_fixed_t sample[18][32], unsigned int sb)
 {
   unsigned int i;
@@ -2317,7 +2316,7 @@ void III_overlap_z(mad_fixed_t overlap[18],
  * DESCRIPTION:	perform subband frequency inversion for odd sample lines
  */
 static
-void III_freqinver(mad_fixed_t sample[18][32], unsigned int sb)
+void ICACHE_FLASH_ATTR III_freqinver(mad_fixed_t sample[18][32], unsigned int sb)
 {
   unsigned int i;
 
@@ -2351,7 +2350,7 @@ void III_freqinver(mad_fixed_t sample[18][32], unsigned int sb)
  * DESCRIPTION:	decode frame main_data
  */
 static
-enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
+enum mad_error ICACHE_FLASH_ATTR III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 			  struct sideinfo *si, unsigned int nch)
 {
   struct mad_header *header = &frame->header;
@@ -2388,20 +2387,20 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
       struct channel *channel = &granule->ch[ch];
       unsigned int part2_length;
 
-      sfbwidth[ch] = sfbwidth_table[sfreqi].l;
+      sfbwidth[ch] =  sfbwidth_table[sfreqi].l;
       if (channel->block_type == 2) {
-	    sfbwidth[ch] = (channel->flags & mixed_block_flag) ?
-	    sfbwidth_table[sfreqi].m : sfbwidth_table[sfreqi].s;
+	sfbwidth[ch] = (channel->flags & mixed_block_flag) ?
+	   sfbwidth_table[sfreqi].m :  sfbwidth_table[sfreqi].s;
       }
 
       if (header->flags & MAD_FLAG_LSF_EXT) {
-   	    part2_length = III_scalefactors_lsf(ptr, channel,
+	part2_length = III_scalefactors_lsf(ptr, channel,
 					    ch == 0 ? 0 : &si->gr[1].ch[1],
 					    header->mode_extension);
       }
       else {
-	         part2_length = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
-			 gr == 0 ? 0 : si->scfsi[ch]);
+	part2_length = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
+					gr == 0 ? 0 : si->scfsi[ch]);
       }
 
       error = III_huffdecode(ptr, xr[ch], channel, sfbwidth[ch], part2_length);
@@ -2517,7 +2516,7 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
  * NAME:	layer->III()
  * DESCRIPTION:	decode a single Layer III frame
  */
-int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
+int ICACHE_FLASH_ATTR mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
 {
   struct mad_header *header = &frame->header;
   unsigned int nch, priv_bitlen, next_md_begin = 0;
@@ -2526,13 +2525,15 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
   struct mad_bitptr ptr;
   struct sideinfo si;
   enum mad_error error;
-  int result = 0;
+  int result = 0, i;
+  static mad_fixed_t ovlbuf[2 * 32 * 18];
 
   /* allocate Layer III dynamic structures */
-
+    frame->overlap=(void*)ovlbuf;
+	stream->main_data=&MainData;
+/*
   if (stream->main_data == 0) {
-    // stream->main_data = malloc(MAD_BUFFER_MDLEN); !!! malloc and free functions are not implemented here
-	stream->main_data = &MainData;
+    stream->main_data = malloc(MAD_BUFFER_MDLEN);
     if (stream->main_data == 0) {
       stream->error = MAD_ERROR_NOMEM;
       return -1;
@@ -2540,12 +2541,13 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
   }
 
   if (frame->overlap == 0) {
-    frame->overlap = (void*)frame_overlap_buff;
+    frame->overlap = calloc(2 * 32 * 18, sizeof(mad_fixed_t));
     if (frame->overlap == 0) {
       stream->error = MAD_ERROR_NOMEM;
       return -1;
     }
   }
+*/
 
   nch = MAD_NCHANNELS(header);
   si_len = (header->flags & MAD_FLAG_LSF_EXT) ?
@@ -2572,7 +2574,6 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
       result = -1;
     }
   }
-
   /* decode frame side information */
 
   error = III_sideinfo(&stream->ptr, nch, header->flags & MAD_FLAG_LSF_EXT,
@@ -2584,6 +2585,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
 
   header->flags        |= priv_bitlen;
   header->private_bits |= si.private_bits;
+
 
   /* find main_data of next frame */
 

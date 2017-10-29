@@ -52,14 +52,11 @@
 # include "synth.h"
 # include "decoder.h"
 
-// Decalre a sync structure because no malloc and free are not implemented here
-struct sync_t Sync;
-
 /*
  * NAME:	decoder->init()
  * DESCRIPTION:	initialize a decoder object with callback routines
  */
-void mad_decoder_init(struct mad_decoder *decoder, void *data,
+void ICACHE_FLASH_ATTR mad_decoder_init(struct mad_decoder *decoder, void *data,
 		      enum mad_flow (*input_func)(void *,
 						  struct mad_stream *),
 		      enum mad_flow (*header_func)(void *,
@@ -96,7 +93,7 @@ void mad_decoder_init(struct mad_decoder *decoder, void *data,
   decoder->message_func = message_func;
 }
 
-int mad_decoder_finish(struct mad_decoder *decoder)
+int ICACHE_FLASH_ATTR mad_decoder_finish(struct mad_decoder *decoder)
 {
 # if defined(USE_ASYNC)
   if (decoder->mode == MAD_DECODER_MODE_ASYNC && decoder->async.pid) {
@@ -129,7 +126,7 @@ int mad_decoder_finish(struct mad_decoder *decoder)
 
 # if defined(USE_ASYNC)
 static
-enum mad_flow send_io(int fd, void const *data, size_t len)
+enum mad_flow ICACHE_FLASH_ATTR send_io(int fd, void const *data, size_t len)
 {
   char const *ptr = data;
   ssize_t count;
@@ -150,7 +147,7 @@ enum mad_flow send_io(int fd, void const *data, size_t len)
 }
 
 static
-enum mad_flow receive_io(int fd, void *buffer, size_t len)
+enum mad_flow ICACHE_FLASH_ATTR receive_io(int fd, void *buffer, size_t len)
 {
   char *ptr = buffer;
   ssize_t count;
@@ -173,7 +170,7 @@ enum mad_flow receive_io(int fd, void *buffer, size_t len)
 }
 
 static
-enum mad_flow receive_io_blocking(int fd, void *buffer, size_t len)
+enum mad_flow ICACHE_FLASH_ATTR receive_io_blocking(int fd, void *buffer, size_t len)
 {
   int flags, blocking;
   enum mad_flow result;
@@ -198,7 +195,7 @@ enum mad_flow receive_io_blocking(int fd, void *buffer, size_t len)
 }
 
 static
-enum mad_flow send(int fd, void const *message, unsigned int size)
+enum mad_flow ICACHE_FLASH_ATTR send(int fd, void const *message, unsigned int size)
 {
   enum mad_flow result;
 
@@ -215,7 +212,7 @@ enum mad_flow send(int fd, void const *message, unsigned int size)
 }
 
 static
-enum mad_flow receive(int fd, void **message, unsigned int *size)
+enum mad_flow ICACHE_FLASH_ATTR receive(int fd, void **message, unsigned int *size)
 {
   enum mad_flow result;
   unsigned int actual;
@@ -265,7 +262,7 @@ enum mad_flow receive(int fd, void **message, unsigned int *size)
 }
 
 static
-enum mad_flow check_message(struct mad_decoder *decoder)
+enum mad_flow ICACHE_FLASH_ATTR check_message(struct mad_decoder *decoder)
 {
   enum mad_flow result;
   void *message = 0;
@@ -296,7 +293,7 @@ enum mad_flow check_message(struct mad_decoder *decoder)
 # endif
 
 static
-enum mad_flow error_default(void *data, struct mad_stream *stream,
+enum mad_flow ICACHE_FLASH_ATTR error_default(void *data, struct mad_stream *stream,
 			    struct mad_frame *frame)
 {
   int *bad_last_frame = data;
@@ -316,7 +313,7 @@ enum mad_flow error_default(void *data, struct mad_stream *stream,
 }
 
 static
-int run_sync(struct mad_decoder *decoder)
+int ICACHE_FLASH_ATTR run_sync(struct mad_decoder *decoder)
 {
   enum mad_flow (*error_func)(void *, struct mad_stream *, struct mad_frame *);
   void *error_data;
@@ -325,7 +322,9 @@ int run_sync(struct mad_decoder *decoder)
   struct mad_frame *frame;
   struct mad_synth *synth;
   int result = 0;
+  int r;
 
+//	printf("run_sync\n");
   if (decoder->input_func == 0)
     return 0;
 
@@ -349,7 +348,9 @@ int run_sync(struct mad_decoder *decoder)
   mad_stream_options(stream, decoder->options);
 
   do {
-    switch (decoder->input_func(decoder->cb_data, stream)) {
+    r=decoder->input_func(decoder->cb_data, stream);
+//   printf("Input fn: %d\n", r);
+    switch (r) {
     case MAD_FLOW_STOP:
       goto done;
     case MAD_FLOW_BREAK:
@@ -376,7 +377,9 @@ int run_sync(struct mad_decoder *decoder)
 # endif
 
       if (decoder->header_func) {
-	if (mad_header_decode(&frame->header, stream) == -1) {
+	r=mad_header_decode(&frame->header, stream);
+//	printf("mad_header_decode_func: %d\n", r);
+	if (r!=-1) {
 	  if (!MAD_RECOVERABLE(stream->error))
 	    break;
 
@@ -404,7 +407,9 @@ int run_sync(struct mad_decoder *decoder)
 	}
       }
 
-      if (mad_frame_decode(frame, stream) == -1) {
+      r=mad_frame_decode(frame, stream);
+//	printf("mad_frame_decode: %d\n", r);
+      if (r == -1) {
 	if (!MAD_RECOVERABLE(stream->error))
 	  break;
 
@@ -438,6 +443,7 @@ int run_sync(struct mad_decoder *decoder)
 
       mad_synth_frame(synth, frame);
 
+//	printf("Calling output fn\n");
       if (decoder->output_func) {
 	switch (decoder->output_func(decoder->cb_data,
 				     &frame->header, &synth->pcm)) {
@@ -467,7 +473,7 @@ int run_sync(struct mad_decoder *decoder)
 
 # if defined(USE_ASYNC)
 static
-int run_async(struct mad_decoder *decoder)
+int ICACHE_FLASH_ATTR run_async(struct mad_decoder *decoder)
 {
   pid_t pid;
   int ptoc[2], ctop[2], flags;
@@ -533,10 +539,11 @@ int run_async(struct mad_decoder *decoder)
  * NAME:	decoder->run()
  * DESCRIPTION:	run the decoder thread either synchronously or asynchronously
  */
-int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
+int ICACHE_FLASH_ATTR mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
 {
   int result;
   int (*run)(struct mad_decoder *) = 0;
+  static struct sync_t decsync; //statically-allocated decoder obj
 
   switch (decoder->mode = mode) {
   case MAD_DECODER_MODE_SYNC:
@@ -554,15 +561,14 @@ int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
     return -1;
 
 //  decoder->sync = malloc(sizeof(*decoder->sync));
-  decoder->sync = &Sync;
-
+  decoder->sync=&decsync;
   if (decoder->sync == 0)
     return -1;
 
   result = run(decoder);
 
 //  free(decoder->sync);
-  decoder->sync = 0;
+//  decoder->sync = 0;
 
   return result;
 }
@@ -571,7 +577,7 @@ int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
  * NAME:	decoder->message()
  * DESCRIPTION:	send a message to and receive a reply from the decoder process
  */
-int mad_decoder_message(struct mad_decoder *decoder,
+int ICACHE_FLASH_ATTR mad_decoder_message(struct mad_decoder *decoder,
 			void *message, unsigned int *len)
 {
 # if defined(USE_ASYNC)

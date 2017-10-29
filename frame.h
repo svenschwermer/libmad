@@ -22,6 +22,7 @@
 # ifndef LIBMAD_FRAME_H
 # define LIBMAD_FRAME_H
 
+
 # include "fixed.h"
 # include "timer.h"
 # include "stream.h"
@@ -29,14 +30,14 @@
 enum mad_layer {
   MAD_LAYER_I   = 1,			/* Layer I */
   MAD_LAYER_II  = 2,			/* Layer II */
-  MAD_LAYER_III = 3		    	/* Layer III */
+  MAD_LAYER_III = 3			/* Layer III */
 };
 
 enum mad_mode {
   MAD_MODE_SINGLE_CHANNEL = 0,		/* single channel */
   MAD_MODE_DUAL_CHANNEL	  = 1,		/* dual channel */
   MAD_MODE_JOINT_STEREO	  = 2,		/* joint (MS/intensity) stereo */
-  MAD_MODE_STEREO	      = 3		/* normal LR stereo */
+  MAD_MODE_STEREO	  = 3		/* normal LR stereo */
 };
 
 enum mad_emphasis {
@@ -50,13 +51,13 @@ struct mad_header {
   enum mad_layer layer;			/* audio layer (1, 2, or 3) */
   enum mad_mode mode;			/* channel mode (see above) */
   int mode_extension;			/* additional mode info */
-  enum mad_emphasis emphasis;	/* de-emphasis to use (see above) */
+  enum mad_emphasis emphasis;		/* de-emphasis to use (see above) */
 
   unsigned long bitrate;		/* stream bitrate (bps) */
   unsigned int samplerate;		/* sampling frequency (Hz) */
 
   unsigned short crc_check;		/* frame CRC accumulator */
-  unsigned short crc_target;	/* final target CRC checksum */
+  unsigned short crc_target;		/* final target CRC checksum */
 
   int flags;				/* flags (see below) */
   int private_bits;			/* private bits (see below) */
