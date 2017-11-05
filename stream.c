@@ -30,9 +30,6 @@
 # include "bit.h"
 # include "stream.h"
 
-// define a global structure for MainData  malloc and free are not implemented here
-main_data_t MainData;
-
 /*
  * NAME:	stream->init()
  * DESCRIPTION:	initialize stream struct
@@ -67,7 +64,6 @@ void mad_stream_init(struct mad_stream *stream)
 void mad_stream_finish(struct mad_stream *stream)
 {
   if (stream->main_data) {
-    // free(stream->main_data);	!!! malloc and free functions are not implemented here
     stream->main_data = 0;
   }
 

@@ -46,8 +46,6 @@
 # include "layer3.h"
 # include "debug.h"
 
-unsigned char frame_overlap_buff[2 * 32 * 18 * sizeof(mad_fixed_t)];
-
 
 /* --- Layer III ----------------------------------------------------------- */
 
@@ -651,7 +649,7 @@ unsigned int III_scalefactors_lsf(struct mad_bitptr *ptr,
       for (i = 0; i < nsfb[part]; ++i)
 	channel->scalefac[n++] = mad_bit_read(ptr, slen[part]);
     }
-				  
+
     while (n < 39)
       channel->scalefac[n++] = 0;
   }
@@ -911,8 +909,8 @@ mad_fixed_t III_requantize(unsigned int value, signed int exp)
     if (exp >= 5) {
       /* overflow */
 # if defined(DEBUG)
-       DBG((TXT("requantize overflow (%f * 2^%d)\n"),
-	      mad_f_todouble(requantized), exp));
+      fprintf(stderr, "requantize overflow (%f * 2^%d)\n"),
+	           mad_f_todouble(requantized), exp));
 # endif
       requantized = MAD_F_MAX;
     }
@@ -2390,18 +2388,18 @@ enum mad_error III_decode(struct mad_bitptr *ptr, struct mad_frame *frame,
 
       sfbwidth[ch] = sfbwidth_table[sfreqi].l;
       if (channel->block_type == 2) {
-	    sfbwidth[ch] = (channel->flags & mixed_block_flag) ?
-	    sfbwidth_table[sfreqi].m : sfbwidth_table[sfreqi].s;
+       sfbwidth[ch] = (channel->flags & mixed_block_flag) ?
+         sfbwidth_table[sfreqi].m : sfbwidth_table[sfreqi].s;
       }
 
       if (header->flags & MAD_FLAG_LSF_EXT) {
-   	    part2_length = III_scalefactors_lsf(ptr, channel,
+       part2_length = III_scalefactors_lsf(ptr, channel,
 					    ch == 0 ? 0 : &si->gr[1].ch[1],
 					    header->mode_extension);
       }
       else {
-	         part2_length = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
-			 gr == 0 ? 0 : si->scfsi[ch]);
+       part2_length = III_scalefactors(ptr, channel, &si->gr[0].ch[ch],
+                                       gr == 0 ? 0 : si->scfsi[ch]);
       }
 
       error = III_huffdecode(ptr, xr[ch], channel, sfbwidth[ch], part2_length);
@@ -2527,12 +2525,13 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
   struct sideinfo si;
   enum mad_error error;
   int result = 0;
-
+  
   /* allocate Layer III dynamic structures */
+  static main_data_t main_data_buffer;
+  static mad_fixed_t frame_overlap_buffer[2][32][18];
 
   if (stream->main_data == 0) {
-    // stream->main_data = malloc(MAD_BUFFER_MDLEN); !!! malloc and free functions are not implemented here
-	stream->main_data = &MainData;
+	stream->main_data = &main_data_buffer;
     if (stream->main_data == 0) {
       stream->error = MAD_ERROR_NOMEM;
       return -1;
@@ -2540,7 +2539,7 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame)
   }
 
   if (frame->overlap == 0) {
-    frame->overlap = (void*)frame_overlap_buff;
+    frame->overlap = &frame_overlap_buffer;
     if (frame->overlap == 0) {
       stream->error = MAD_ERROR_NOMEM;
       return -1;

@@ -22,8 +22,7 @@
 # ifndef LIBMAD_GLOBAL_H
 # define LIBMAD_GLOBAL_H
 
-extern void abort(void);
-
+#define FPM_DEFAULT
 
 /* conditional debugging */
 
@@ -54,7 +53,13 @@ extern void abort(void);
 #  if defined(NDEBUG)
 #   define assert(x)	/* nothing */
 #  else
-#   define assert(x)	do { if (!(x)) abort(); } while (0)
+#   define assert(x) \
+        do { \
+            if (!(x)) { \
+                printf("abort!\nfile:%s\nline:%d\n", __FILE__, __LINE__); \
+                while(1); \
+            } \
+        } while (0)
 #  endif
 # endif
 

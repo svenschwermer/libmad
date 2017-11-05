@@ -52,9 +52,6 @@
 # include "synth.h"
 # include "decoder.h"
 
-// Decalre a sync structure because no malloc and free are not implemented here
-struct sync_t Sync;
-
 /*
  * NAME:	decoder->init()
  * DESCRIPTION:	initialize a decoder object with callback routines
@@ -537,6 +534,8 @@ int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
 {
   int result;
   int (*run)(struct mad_decoder *) = 0;
+  // Declare a sync structure because no malloc and free are not implemented here
+  static struct sync_t sync_buffer;
 
   switch (decoder->mode = mode) {
   case MAD_DECODER_MODE_SYNC:
@@ -553,15 +552,10 @@ int mad_decoder_run(struct mad_decoder *decoder, enum mad_decoder_mode mode)
   if (run == 0)
     return -1;
 
-//  decoder->sync = malloc(sizeof(*decoder->sync));
-  decoder->sync = &Sync;
-
-  if (decoder->sync == 0)
-    return -1;
+  decoder->sync = &sync_buffer;
 
   result = run(decoder);
 
-//  free(decoder->sync);
   decoder->sync = 0;
 
   return result;
