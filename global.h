@@ -53,6 +53,7 @@
 #if defined(NDEBUG)
 #define assert(x) /* nothing */
 #else
+#include <stdio.h>
 #define assert(x)                                                              \
   do {                                                                         \
     if (!(x)) {                                                                \

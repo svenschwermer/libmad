@@ -39,7 +39,6 @@
 #endif
 
 #include "bit.h"
-#include "debug.h"
 #include "fixed.h"
 #include "frame.h"
 #include "huffman.h"
@@ -1053,8 +1052,8 @@ static mad_fixed_t III_requantize(unsigned int value, signed int exp) {
     if (exp >= 5) {
     /* overflow */
 #if defined(DEBUG)
-      fprintf(stderr, "requantize overflow (%f * 2^%d)\n"),
-	           mad_f_todouble(requantized), exp));
+      fprintf(stderr, "requantize overflow (%f * 2^%d)\n",
+              mad_f_todouble(requantized), exp);
 #endif
       requantized = MAD_F_MAX;
     } else
@@ -2634,10 +2633,9 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame) {
   int result = 0;
 
   /* allocate Layer III dynamic structures */
-  static main_data_t main_data_buffer;
-  static mad_fixed_t frame_overlap_buffer[2][32][18];
 
   if (stream->main_data == 0) {
+    static unsigned char main_data_buffer[MAD_BUFFER_MDLEN];
     stream->main_data = &main_data_buffer;
     if (stream->main_data == 0) {
       stream->error = MAD_ERROR_NOMEM;
@@ -2646,7 +2644,9 @@ int mad_layer_III(struct mad_stream *stream, struct mad_frame *frame) {
   }
 
   if (frame->overlap == 0) {
-    frame->overlap = &frame_overlap_buffer;
+    static mad_fixed_t overlap_buffer[2][32][18];
+    memset(overlap_buffer, 0, sizeof overlap_buffer);
+    frame->overlap = &overlap_buffer;
     if (frame->overlap == 0) {
       stream->error = MAD_ERROR_NOMEM;
       return -1;

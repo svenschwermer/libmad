@@ -26,16 +26,17 @@
 #include "frame.h"
 
 struct mad_pcm {
-  unsigned int samplerate; /* sampling frequency (Hz)         */
-  unsigned short channels; /* number of channels              */
-  unsigned short length;   /* number of samples per channel   */
+  unsigned int samplerate;      /* sampling frequency (Hz) */
+  unsigned short channels;      /* number of channels */
+  unsigned short length;        /* number of samples per channel */
 };
 
 struct mad_synth {
   mad_fixed_t filter[2][2][2][16][8]; /* polyphase filterbank outputs */
-                                      /* [ch][eo][peo][s][v]          */
+                                      /* [ch][eo][peo][s][v] */
 
   unsigned int phase; /* current processing phase */
+
   struct mad_pcm pcm; /* PCM output */
 };
 
