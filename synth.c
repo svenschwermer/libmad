@@ -51,7 +51,7 @@ signed int scale(mad_fixed_t sample)
     sample = -MAD_F_ONE;
 
   /* quantize */
-  return sample >> (MAD_F_FRACBITS + 1 - 16);
+  return sample >> (MAD_F_FRACBITS + 2 - 16);
 }
 /*
  * NAME:	synth->init()
