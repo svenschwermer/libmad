@@ -38,7 +38,7 @@
  * use this routine if high-quality output is desired.
  */
 
-static inline signed int scale(mad_fixed_t sample) {
+static inline short scale(mad_fixed_t sample) {
   /* round */
   sample += (1L << (MAD_F_FRACBITS - 16));
 
@@ -612,13 +612,12 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
   register mad_fixed_t const(*Dptr)[32], *ptr;
   register mad_fixed64hi_t hi;
   register mad_fixed64lo_t lo;
-  mad_fixed_t raw_sample;
   short int short_sample_buff[32];
 
   phase = synth->phase;
 
   for (s = 0; s < ns; ++s) {
-    memset(short_sample_buff, 0x00, sizeof(short_sample_buff));
+    memset(short_sample_buff, 0, sizeof(short_sample_buff));
 
     for (ch = 0; ch < nch; ++ch) {
       sbsample = &frame->sbsample[ch];
@@ -660,9 +659,8 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
       MLA(hi, lo, (*fe)[6], ptr[4]);
       MLA(hi, lo, (*fe)[7], ptr[2]);
 
-      raw_sample = SHIFT(MLZ(hi, lo));
-      raw_sample = scale(raw_sample);
-      (*pcm1++) += (short int)raw_sample;
+      *pcm1++ = scale(SHIFT(MLZ(hi, lo)));
+
       pcm2 = pcm1 + 30;
 
       for (sb = 1; sb < 16; ++sb) {
@@ -683,7 +681,6 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
         MLN(hi, lo);
 
         ptr = *Dptr + pe;
-
         MLA(hi, lo, (*fe)[7], ptr[2]);
         MLA(hi, lo, (*fe)[6], ptr[4]);
         MLA(hi, lo, (*fe)[5], ptr[6]);
@@ -693,9 +690,7 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
         MLA(hi, lo, (*fe)[1], ptr[14]);
         MLA(hi, lo, (*fe)[0], ptr[0]);
 
-        raw_sample = SHIFT(MLZ(hi, lo));
-        raw_sample = scale(raw_sample);
-        (*pcm1++) += (short int)raw_sample;
+        *pcm1++ = scale(SHIFT(MLZ(hi, lo)));
 
         ptr = *Dptr - pe;
         ML0(hi, lo, (*fe)[0], ptr[31 - 16]);
@@ -717,14 +712,12 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
         MLA(hi, lo, (*fo)[1], ptr[31 - 14]);
         MLA(hi, lo, (*fo)[0], ptr[31 - 16]);
 
-        raw_sample = SHIFT(MLZ(hi, lo));
-        raw_sample = scale(raw_sample);
-        (*pcm2--) += (short int)raw_sample;
+        *pcm2-- = scale(SHIFT(MLZ(hi, lo)));
 
         ++fo;
       }
 
-      Dptr++;
+      ++Dptr;
 
       ptr = *Dptr + po;
       ML0(hi, lo, (*fo)[0], ptr[0]);
@@ -736,9 +729,7 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
       MLA(hi, lo, (*fo)[6], ptr[4]);
       MLA(hi, lo, (*fo)[7], ptr[2]);
 
-      raw_sample = SHIFT(-MLZ(hi, lo));
-      raw_sample = scale(raw_sample);
-      (*pcm1) += (short int)raw_sample;
+      *pcm1 = scale(SHIFT(-MLZ(hi, lo)));
 
     } /* Channel For */
 
@@ -765,7 +756,6 @@ static void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
   register mad_fixed_t const(*Dptr)[32], *ptr;
   register mad_fixed64hi_t hi;
   register mad_fixed64lo_t lo;
-  mad_fixed_t raw_sample;
   short int short_sample_buff[16];
 
   phase = synth->phase;
@@ -813,9 +803,8 @@ static void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
       MLA(hi, lo, (*fe)[6], ptr[4]);
       MLA(hi, lo, (*fe)[7], ptr[2]);
 
-      raw_sample = SHIFT(MLZ(hi, lo));
-      raw_sample = scale(raw_sample);
-      (*pcm1++) += (short int)raw_sample;
+      *pcm1++ = scale(SHIFT(MLZ(hi, lo)));
+
       pcm2 = pcm1 + 14;
 
       for (sb = 1; sb < 16; ++sb) {
@@ -845,9 +834,7 @@ static void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
         MLA(hi, lo, (*fe)[1], ptr[14]);
         MLA(hi, lo, (*fe)[0], ptr[0]);
 
-        raw_sample = SHIFT(MLZ(hi, lo));
-        raw_sample = scale(raw_sample);
-        (*pcm1++) += (short int)raw_sample;
+        *pcm1++ = scale(SHIFT(MLZ(hi, lo)));
 
         ptr = *Dptr - pe;
         ML0(hi, lo, (*fe)[0], ptr[31 - 16]);
@@ -869,14 +856,12 @@ static void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
         MLA(hi, lo, (*fo)[1], ptr[31 - 14]);
         MLA(hi, lo, (*fo)[0], ptr[31 - 16]);
 
-        raw_sample = SHIFT(MLZ(hi, lo));
-        raw_sample = scale(raw_sample);
-        (*pcm2--) += (short int)raw_sample;
+        *pcm2-- = scale(SHIFT(MLZ(hi, lo)));
 
         ++fo;
       }
 
-      Dptr++;
+      ++Dptr;
 
       ptr = *Dptr + po;
       ML0(hi, lo, (*fo)[0], ptr[0]);
@@ -888,10 +873,7 @@ static void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
       MLA(hi, lo, (*fo)[6], ptr[4]);
       MLA(hi, lo, (*fo)[7], ptr[2]);
 
-      raw_sample = SHIFT(-MLZ(hi, lo));
-      raw_sample = scale(raw_sample);
-      (*pcm1) += (short int)raw_sample;
-
+      *pcm1 = scale(SHIFT(-MLZ(hi, lo)));
     } /* Channel For */
 
     /* Block render */
@@ -916,18 +898,19 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame) {
 
   synth->pcm.samplerate = frame->header.samplerate;
   synth->pcm.channels = nch;
-  synth->pcm.length = 128 * ns;
+  synth->pcm.length = 32 * ns;
+
+  synth_frame = synth_full;
 
   if (frame->options & MAD_OPTION_HALFSAMPLERATE) {
     synth->pcm.samplerate /= 2;
     synth->pcm.length /= 2;
 
     synth_frame = synth_half;
-  } else {
-    synth_frame = synth_full;
   }
 
   set_dac_sample_rate(synth->pcm.samplerate);
   synth_frame(synth, frame, nch, ns);
+
   synth->phase = (synth->phase + ns) % 16;
 }
