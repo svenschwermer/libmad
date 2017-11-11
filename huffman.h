@@ -19,39 +19,39 @@
  * $Id: huffman.h,v 1.11 2004/01/23 09:41:32 rob Exp $
  */
 
-# ifndef LIBMAD_HUFFMAN_H
-# define LIBMAD_HUFFMAN_H
+#ifndef LIBMAD_HUFFMAN_H
+#define LIBMAD_HUFFMAN_H
 
 union huffquad {
   struct {
-    unsigned int final  :  1;
-    unsigned int bits   :  3;
+    unsigned int final : 1;
+    unsigned int bits : 3;
     unsigned int offset : 12;
   } ptr;
   struct {
-    unsigned int final  :  1;
-    unsigned int hlen   :  3;
-    unsigned int v      :  1;
-    unsigned int w      :  1;
-    unsigned int x      :  1;
-    unsigned int y      :  1;
+    unsigned int final : 1;
+    unsigned int hlen : 3;
+    unsigned int v : 1;
+    unsigned int w : 1;
+    unsigned int x : 1;
+    unsigned int y : 1;
   } value;
-  unsigned int final    :  1;
+  unsigned int final : 1;
 };
 
 union huffpair {
   struct {
-    unsigned int final  :  1;
-    unsigned int bits   :  3;
+    unsigned int final : 1;
+    unsigned int bits : 3;
     unsigned int offset : 12;
   } ptr;
   struct {
-    unsigned int final  :  1;
-    unsigned int hlen   :  3;
-    unsigned int x      :  4;
-    unsigned int y      :  4;
+    unsigned int final : 1;
+    unsigned int hlen : 3;
+    unsigned int x : 4;
+    unsigned int y : 4;
   } value;
-  unsigned int final    :  1;
+  unsigned int final : 1;
 };
 
 struct hufftable {
@@ -63,4 +63,4 @@ struct hufftable {
 extern union huffquad const *const mad_huff_quad_table[2];
 extern struct hufftable const mad_huff_pair_table[32];
 
-# endif
+#endif

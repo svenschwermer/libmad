@@ -19,8 +19,8 @@
  * $Id: bit.h,v 1.12 2004/01/23 09:41:32 rob Exp $
  */
 
-# ifndef LIBMAD_BIT_H
-# define LIBMAD_BIT_H
+#ifndef LIBMAD_BIT_H
+#define LIBMAD_BIT_H
 
 struct mad_bitptr {
   unsigned char const *byte;
@@ -30,12 +30,12 @@ struct mad_bitptr {
 
 void mad_bit_init(struct mad_bitptr *, unsigned char const *);
 
-# define mad_bit_finish(bitptr)		/* nothing */
+#define mad_bit_finish(bitptr) /* nothing */
 
 unsigned int mad_bit_length(struct mad_bitptr const *,
-			    struct mad_bitptr const *);
+                            struct mad_bitptr const *);
 
-# define mad_bit_bitsleft(bitptr)  ((bitptr)->left)
+#define mad_bit_bitsleft(bitptr) ((bitptr)->left)
 unsigned char const *mad_bit_nextbyte(struct mad_bitptr const *);
 
 void mad_bit_skip(struct mad_bitptr *, unsigned int);
@@ -44,4 +44,4 @@ void mad_bit_write(struct mad_bitptr *, unsigned int, unsigned long);
 
 unsigned short mad_bit_crc(struct mad_bitptr, unsigned int, unsigned short);
 
-# endif
+#endif
