@@ -26,10 +26,9 @@
 #include "frame.h"
 
 struct mad_pcm {
-  unsigned int samplerate;      /* sampling frequency (Hz) */
-  unsigned short channels;      /* number of channels */
-  unsigned short length;        /* number of samples per channel */
-  mad_fixed_t samples[2][1152]; /* PCM output samples [ch][sample] */
+  unsigned int samplerate; /* sampling frequency (Hz) */
+  unsigned short channels; /* number of channels */
+  unsigned short length;   /* number of samples per channel */
   short *(*get_sample_buffer)();
 };
 
@@ -51,7 +50,7 @@ enum { MAD_PCM_CHANNEL_DUAL_1 = 0, MAD_PCM_CHANNEL_DUAL_2 = 1 };
 /* stereo PCM selector */
 enum { MAD_PCM_CHANNEL_STEREO_LEFT = 0, MAD_PCM_CHANNEL_STEREO_RIGHT = 1 };
 
-void mad_synth_init(struct mad_synth *);
+void mad_synth_init(struct mad_synth *, short *(*)());
 
 #define mad_synth_finish(synth) /* nothing */
 

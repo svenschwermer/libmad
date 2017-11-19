@@ -33,7 +33,7 @@
  * NAME:	synth->init()
  * DESCRIPTION:	initialize synth struct
  */
-void mad_synth_init(struct mad_synth *synth) {
+void mad_synth_init(struct mad_synth *synth, short *(*get_sample_buffer)()) {
   mad_synth_mute(synth);
 
   synth->phase = 0;
@@ -41,6 +41,7 @@ void mad_synth_init(struct mad_synth *synth) {
   synth->pcm.samplerate = 0;
   synth->pcm.channels = 0;
   synth->pcm.length = 0;
+  synth->pcm.get_sample_buffer = get_sample_buffer;
 }
 
 /*
@@ -751,7 +752,7 @@ static void synth_half(struct mad_synth *synth, struct mad_frame const *frame,
     sbsample = &frame->sbsample[ch];
     filter = &synth->filter[ch];
     phase = synth->phase;
-    pcm1 = synth->pcm.samples[ch];
+    pcm1 = 0; // synth->pcm.samples[ch];
 
     for (s = 0; s < ns; ++s) {
       dct32((*sbsample)[s], phase >> 1, (*filter)[0][phase & 1],
