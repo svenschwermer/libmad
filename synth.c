@@ -60,37 +60,37 @@ void mad_synth_mute(struct mad_synth *synth) {
   }
 }
 
-/*
- * An optional optimization called here the Subband Synthesis Optimization
- * (SSO) improves the performance of subband synthesis at the expense of
- * accuracy.
- *
- * The idea is to simplify 32x32->64-bit multiplication to 32x32->32 such
- * that extra scaling and rounding are not necessary. This often allows the
- * compiler to use faster 32-bit multiply-accumulate instructions instead of
- * explicit 64-bit multiply, shift, and add instructions.
- *
- * SSO works like this: a full 32x32->64-bit multiply of two mad_fixed_t
- * values requires the result to be right-shifted 28 bits to be properly
- * scaled to the same fixed-point format. Right shifts can be applied at any
- * time to either operand or to the result, so the optimization involves
- * careful placement of these shifts to minimize the loss of accuracy.
- *
- * First, a 14-bit shift is applied with rounding at compile-time to the D[]
- * table of coefficients for the subband synthesis window. This only loses 2
- * bits of accuracy because the lower 12 bits are always zero. A second
- * 12-bit shift occurs after the DCT calculation. This loses 12 bits of
- * accuracy. Finally, a third 2-bit shift occurs just before the sample is
- * saved in the PCM buffer. 14 + 12 + 2 == 28 bits.
- */
+  /*
+   * An optional optimization called here the Subband Synthesis Optimization
+   * (SSO) improves the performance of subband synthesis at the expense of
+   * accuracy.
+   *
+   * The idea is to simplify 32x32->64-bit multiplication to 32x32->32 such
+   * that extra scaling and rounding are not necessary. This often allows the
+   * compiler to use faster 32-bit multiply-accumulate instructions instead of
+   * explicit 64-bit multiply, shift, and add instructions.
+   *
+   * SSO works like this: a full 32x32->64-bit multiply of two mad_fixed_t
+   * values requires the result to be right-shifted 28 bits to be properly
+   * scaled to the same fixed-point format. Right shifts can be applied at any
+   * time to either operand or to the result, so the optimization involves
+   * careful placement of these shifts to minimize the loss of accuracy.
+   *
+   * First, a 14-bit shift is applied with rounding at compile-time to the D[]
+   * table of coefficients for the subband synthesis window. This only loses 2
+   * bits of accuracy because the lower 12 bits are always zero. A second
+   * 12-bit shift occurs after the DCT calculation. This loses 12 bits of
+   * accuracy. Finally, a third 2-bit shift occurs just before the sample is
+   * saved in the PCM buffer. 14 + 12 + 2 == 28 bits.
+   */
 
-/* FPM_DEFAULT without OPT_SSO will actually lose accuracy and performance */
+  /* FPM_DEFAULT without OPT_SSO will actually lose accuracy and performance */
 
 #if defined(FPM_DEFAULT) && !defined(OPT_SSO)
 #define OPT_SSO
 #endif
 
-/* second SSO shift, with rounding */
+  /* second SSO shift, with rounding */
 
 #if defined(OPT_SSO)
 #define SHIFT(x) (((x) + (1L << 11)) >> 12)
@@ -98,7 +98,7 @@ void mad_synth_mute(struct mad_synth *synth) {
 #define SHIFT(x) (x)
 #endif
 
-/* possible DCT speed optimization */
+  /* possible DCT speed optimization */
 
 #if defined(OPT_SPEED) && defined(MAD_F_MLX)
 #define OPT_DCTO
@@ -144,7 +144,7 @@ static void dct32(mad_fixed_t const in[32], unsigned int slot,
   mad_fixed_t t168, t169, t170, t171, t172, t173, t174, t175;
   mad_fixed_t t176;
 
-/* costab[i] = cos(PI / (2 * 32) * i) */
+  /* costab[i] = cos(PI / (2 * 32) * i) */
 
 #if defined(OPT_DCTO)
 #define costab1 MAD_F(0x7fd8878e)
@@ -541,7 +541,7 @@ static void dct32(mad_fixed_t const in[32], unsigned int slot,
 #undef MUL
 #undef SHIFT
 
-/* third SSO shift and/or D[] optimization preshift */
+  /* third SSO shift and/or D[] optimization preshift */
 
 #if defined(OPT_SSO)
 #if MAD_F_FRACBITS != 28
@@ -572,6 +572,28 @@ static mad_fixed_t const D[17][32] = {
 #include "D.dat"
 };
 
+/*
+ * Taken from minimad.c
+ * The following utility routine performs simple rounding, clipping, and
+ * scaling of MAD's high-resolution samples down to 16 bits. It does not
+ * perform any dithering or noise shaping, which would be recommended to
+ * obtain any exceptional audio quality. It is therefore not recommended to
+ * use this routine if high-quality output is desired.
+ */
+static short scale(mad_fixed_t sample) {
+  /* round */
+  sample += (1L << (MAD_F_FRACBITS - 16));
+
+  /* clip */
+  if (sample >= MAD_F_ONE)
+    sample = MAD_F_ONE - 1;
+  else if (sample < -MAD_F_ONE)
+    sample = -MAD_F_ONE;
+
+  /* quantize */
+  return sample >> (MAD_F_FRACBITS + 1 - 16);
+}
+
 #if defined(ASO_SYNTH)
 void synth_full(struct mad_synth *, struct mad_frame const *, unsigned int,
                 unsigned int);
@@ -582,36 +604,33 @@ void synth_full(struct mad_synth *, struct mad_frame const *, unsigned int,
  */
 static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
                        unsigned int nch, unsigned int ns) {
-  unsigned int phase, ch, s, sb, pe, po;
-  mad_fixed_t *pcm1, *pcm2, (*filter)[2][2][16][8];
-  mad_fixed_t const(*sbsample)[36][32];
-  register mad_fixed_t(*fe)[8], (*fx)[8], (*fo)[8];
-  register mad_fixed_t const(*Dptr)[32], *ptr;
-  register mad_fixed64hi_t hi;
-  register mad_fixed64lo_t lo;
+  unsigned int phase = synth->phase;
 
-  for (ch = 0; ch < nch; ++ch) {
-    sbsample = &frame->sbsample[ch];
-    filter = &synth->filter[ch];
-    phase = synth->phase;
-    pcm1 = synth->pcm.samples[ch];
+  for (unsigned int s = 0; s < ns; ++s) {
+    // get new 128 byte buffer: left & right interleaved
+    // 32 16-bit sample pairs or 64 16-bit mono samples
+    short *sample_buffer = synth->pcm.get_sample_buffer();
 
-    for (s = 0; s < ns; ++s) {
-      dct32((*sbsample)[s], phase >> 1, (*filter)[0][phase & 1],
+    for (unsigned int ch = 0; ch < nch; ++ch) {
+      mad_fixed_t(*filter)[2][2][16][8] = &synth->filter[ch];
+
+      dct32(frame->sbsample[ch][s], phase >> 1, (*filter)[0][phase & 1],
             (*filter)[1][phase & 1]);
 
-      pe = phase & ~1;
-      po = ((phase - 1) & 0xf) | 1;
+      unsigned int pe = phase & ~1;
+      unsigned int po = ((phase - 1) & 0xf) | 1;
 
       /* calculate 32 samples */
 
-      fe = &(*filter)[0][phase & 1][0];
-      fx = &(*filter)[0][~phase & 1][0];
-      fo = &(*filter)[1][~phase & 1][0];
+      register mad_fixed_t(*fe)[8] = &(*filter)[0][phase & 1][0];
+      register mad_fixed_t(*fx)[8] = &(*filter)[0][~phase & 1][0];
+      register mad_fixed_t(*fo)[8] = &(*filter)[1][~phase & 1][0];
 
-      Dptr = &D[0];
+      register mad_fixed_t const(*Dptr)[32] = &D[0];
 
-      ptr = *Dptr + po;
+      register const mad_fixed_t *ptr = *Dptr + po;
+      register mad_fixed64hi_t hi;
+      register mad_fixed64lo_t lo;
       ML0(hi, lo, (*fx)[0], ptr[0]);
       MLA(hi, lo, (*fx)[1], ptr[14]);
       MLA(hi, lo, (*fx)[2], ptr[12]);
@@ -632,11 +651,13 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
       MLA(hi, lo, (*fe)[6], ptr[4]);
       MLA(hi, lo, (*fe)[7], ptr[2]);
 
-      *pcm1++ = SHIFT(MLZ(hi, lo));
+      short *pcm1 = sample_buffer + ch;
+      *pcm1 = scale(SHIFT(MLZ(hi, lo)));
+      pcm1 += nch;
 
-      pcm2 = pcm1 + 30;
+      short *pcm2 = pcm1 + nch * 30;
 
-      for (sb = 1; sb < 16; ++sb) {
+      for (unsigned int sb = 1; sb < 16; ++sb) {
         ++fe;
         ++Dptr;
 
@@ -663,7 +684,8 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
         MLA(hi, lo, (*fe)[1], ptr[14]);
         MLA(hi, lo, (*fe)[0], ptr[0]);
 
-        *pcm1++ = SHIFT(MLZ(hi, lo));
+        *pcm1 = scale(SHIFT(MLZ(hi, lo)));
+        pcm1 += nch;
 
         ptr = *Dptr - pe;
         ML0(hi, lo, (*fe)[0], ptr[31 - 16]);
@@ -685,7 +707,8 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
         MLA(hi, lo, (*fo)[1], ptr[31 - 14]);
         MLA(hi, lo, (*fo)[0], ptr[31 - 16]);
 
-        *pcm2-- = SHIFT(MLZ(hi, lo));
+        *pcm2 = scale(SHIFT(MLZ(hi, lo)));
+        pcm2 -= nch;
 
         ++fo;
       }
@@ -702,11 +725,10 @@ static void synth_full(struct mad_synth *synth, struct mad_frame const *frame,
       MLA(hi, lo, (*fo)[6], ptr[4]);
       MLA(hi, lo, (*fo)[7], ptr[2]);
 
-      *pcm1 = SHIFT(-MLZ(hi, lo));
-      pcm1 += 16;
-
-      phase = (phase + 1) % 16;
+      *pcm1 = scale(SHIFT(-MLZ(hi, lo)));
     }
+
+    phase = (phase + 1) % 16;
   }
 }
 #endif
@@ -875,157 +897,4 @@ void mad_synth_frame(struct mad_synth *synth, struct mad_frame const *frame) {
   synth_frame(synth, frame, nch, ns);
 
   synth->phase = (synth->phase + ns) % 16;
-}
-
-/*
- * The following utility routine performs simple rounding, clipping, and
- * scaling of MAD's high-resolution samples down to 16 bits. It does not
- * perform any dithering or noise shaping, which would be recommended to
- * obtain any exceptional audio quality. It is therefore not recommended to
- * use this routine if high-quality output is desired.
- */
-
-static inline short scale(mad_fixed_t sample) {
-  /* round */
-  sample += (1L << (MAD_F_FRACBITS - 16));
-
-  /* clip */
-  if (sample >= MAD_F_ONE)
-    sample = MAD_F_ONE - 1;
-  else if (sample < -MAD_F_ONE)
-    sample = -MAD_F_ONE;
-
-  /* quantize */
-  return sample >> (MAD_F_FRACBITS + 1 - 16);
-}
-
-static void synth_full_alt(struct mad_synth *synth,
-                           struct mad_frame const *frame, unsigned int nch,
-                           unsigned int ns) {
-  unsigned int phase = synth->phase;
-
-  for (unsigned int s = 0; s < ns; ++s) {
-    // get new 128 byte buffer: left & right interleaved
-    // 32 16-bit sample pairs or 64 16-bit mono samples
-    short *sample_buffer = synth->pcm.get_sample_buffer();
-
-    for (unsigned int ch = 0; ch < nch; ++ch) {
-      mad_fixed_t(*filter)[2][2][16][8] = &synth->filter[ch];
-
-      dct32(frame->sbsample[ch][s], phase >> 1, (*filter)[0][phase & 1],
-            (*filter)[1][phase & 1]);
-
-      unsigned int pe = phase & ~1;
-      unsigned int po = ((phase - 1) & 0xf) | 1;
-
-      /* calculate 32 samples */
-
-      register mad_fixed_t(*fe)[8] = &(*filter)[0][phase & 1][0];
-      register mad_fixed_t(*fx)[8] = &(*filter)[0][~phase & 1][0];
-      register mad_fixed_t(*fo)[8] = &(*filter)[1][~phase & 1][0];
-
-      register mad_fixed_t const(*Dptr)[32] = &D[0];
-
-      register mad_fixed_t *ptr = *Dptr + po;
-      register mad_fixed64hi_t hi;
-      register mad_fixed64lo_t lo;
-      ML0(hi, lo, (*fx)[0], ptr[0]);
-      MLA(hi, lo, (*fx)[1], ptr[14]);
-      MLA(hi, lo, (*fx)[2], ptr[12]);
-      MLA(hi, lo, (*fx)[3], ptr[10]);
-      MLA(hi, lo, (*fx)[4], ptr[8]);
-      MLA(hi, lo, (*fx)[5], ptr[6]);
-      MLA(hi, lo, (*fx)[6], ptr[4]);
-      MLA(hi, lo, (*fx)[7], ptr[2]);
-      MLN(hi, lo);
-
-      ptr = *Dptr + pe;
-      MLA(hi, lo, (*fe)[0], ptr[0]);
-      MLA(hi, lo, (*fe)[1], ptr[14]);
-      MLA(hi, lo, (*fe)[2], ptr[12]);
-      MLA(hi, lo, (*fe)[3], ptr[10]);
-      MLA(hi, lo, (*fe)[4], ptr[8]);
-      MLA(hi, lo, (*fe)[5], ptr[6]);
-      MLA(hi, lo, (*fe)[6], ptr[4]);
-      MLA(hi, lo, (*fe)[7], ptr[2]);
-
-      mad_fixed_t *pcm1 = sample_buffer + ch;
-      *pcm1 = scale(SHIFT(MLZ(hi, lo)));
-      pcm1 += nch;
-
-      mad_fixed_t *pcm2 = pcm1 + nch * 30;
-
-      for (unsigned int sb = 1; sb < 16; ++sb) {
-        ++fe;
-        ++Dptr;
-
-        /* D[32 - sb][i] == -D[sb][31 - i] */
-
-        ptr = *Dptr + po;
-        ML0(hi, lo, (*fo)[0], ptr[0]);
-        MLA(hi, lo, (*fo)[1], ptr[14]);
-        MLA(hi, lo, (*fo)[2], ptr[12]);
-        MLA(hi, lo, (*fo)[3], ptr[10]);
-        MLA(hi, lo, (*fo)[4], ptr[8]);
-        MLA(hi, lo, (*fo)[5], ptr[6]);
-        MLA(hi, lo, (*fo)[6], ptr[4]);
-        MLA(hi, lo, (*fo)[7], ptr[2]);
-        MLN(hi, lo);
-
-        ptr = *Dptr + pe;
-        MLA(hi, lo, (*fe)[7], ptr[2]);
-        MLA(hi, lo, (*fe)[6], ptr[4]);
-        MLA(hi, lo, (*fe)[5], ptr[6]);
-        MLA(hi, lo, (*fe)[4], ptr[8]);
-        MLA(hi, lo, (*fe)[3], ptr[10]);
-        MLA(hi, lo, (*fe)[2], ptr[12]);
-        MLA(hi, lo, (*fe)[1], ptr[14]);
-        MLA(hi, lo, (*fe)[0], ptr[0]);
-
-        *pcm1 = scale(SHIFT(MLZ(hi, lo)));
-        pcm1 += nch;
-
-        ptr = *Dptr - pe;
-        ML0(hi, lo, (*fe)[0], ptr[31 - 16]);
-        MLA(hi, lo, (*fe)[1], ptr[31 - 14]);
-        MLA(hi, lo, (*fe)[2], ptr[31 - 12]);
-        MLA(hi, lo, (*fe)[3], ptr[31 - 10]);
-        MLA(hi, lo, (*fe)[4], ptr[31 - 8]);
-        MLA(hi, lo, (*fe)[5], ptr[31 - 6]);
-        MLA(hi, lo, (*fe)[6], ptr[31 - 4]);
-        MLA(hi, lo, (*fe)[7], ptr[31 - 2]);
-
-        ptr = *Dptr - po;
-        MLA(hi, lo, (*fo)[7], ptr[31 - 2]);
-        MLA(hi, lo, (*fo)[6], ptr[31 - 4]);
-        MLA(hi, lo, (*fo)[5], ptr[31 - 6]);
-        MLA(hi, lo, (*fo)[4], ptr[31 - 8]);
-        MLA(hi, lo, (*fo)[3], ptr[31 - 10]);
-        MLA(hi, lo, (*fo)[2], ptr[31 - 12]);
-        MLA(hi, lo, (*fo)[1], ptr[31 - 14]);
-        MLA(hi, lo, (*fo)[0], ptr[31 - 16]);
-
-        *pcm2 = scale(SHIFT(MLZ(hi, lo)));
-        pcm2 -= nch;
-
-        ++fo;
-      }
-
-      ++Dptr;
-
-      ptr = *Dptr + po;
-      ML0(hi, lo, (*fo)[0], ptr[0]);
-      MLA(hi, lo, (*fo)[1], ptr[14]);
-      MLA(hi, lo, (*fo)[2], ptr[12]);
-      MLA(hi, lo, (*fo)[3], ptr[10]);
-      MLA(hi, lo, (*fo)[4], ptr[8]);
-      MLA(hi, lo, (*fo)[5], ptr[6]);
-      MLA(hi, lo, (*fo)[6], ptr[4]);
-      MLA(hi, lo, (*fo)[7], ptr[2]);
-
-      *pcm1 = scale(SHIFT(-MLZ(hi, lo)));
-    }
-
-    phase = (phase + 1) % 16;
-  }
 }
